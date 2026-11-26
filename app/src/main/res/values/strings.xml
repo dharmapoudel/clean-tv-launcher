@@ -72,6 +72,8 @@
     <string name="screen_off_label">Screen off after fade</string>
     <string name="sleep_admin_description">Lets the launcher turn the screen off and sleep the TV on its idle timer.</string>
     <string name="screen_off_state">Screen off after fade: %1$s</string>
+    <string name="dock_tint_label">Dock glass tint</string>
+    <string name="dock_tint_state">Dock glass tint: %1$s</string>
     <string name="rotation_enabled_label">Rotate wallpapers</string>
     <string name="wallpaper_state_rotating">Rotating · every %1$s</string>
     <string name="wallpaper_none_row">None (black screen)</string>

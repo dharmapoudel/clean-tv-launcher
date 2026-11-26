@@ -80,6 +80,12 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             + "  return half4(col * aa, aa);\n"
             + "}\n";
     private final Paint glassPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** How far the frost is mixed toward near-black (the owner's Dock glass tint setting). */
+    private float tintAlpha = 0.12f;
+
+    void setTintAlpha(float alpha) {
+        tintAlpha = alpha;
+    }
     /** The RuntimeShader, held as its base class so older APIs never resolve it. */
     private android.graphics.Shader glassShader;
     private android.graphics.BitmapShader frostShader;
@@ -248,8 +254,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             shader.setFloatUniform("halfSize", rect.width() / 2f, rect.height() / 2f);
             shader.setFloatUniform("radius", radius);
             shader.setFloatUniform("refraction", 10 * density);
-            // Smoked glass: the frost mixed 25% toward near-black, lifted a touch.
-            shader.setFloatUniform("tint", 0x11 / 255f, 0x11 / 255f, 0x13 / 255f, 0.25f);
+            // Smoked glass: the frost mixed toward near-black by the owner's tint, lifted a touch.
+            shader.setFloatUniform("tint", 0x11 / 255f, 0x11 / 255f, 0x13 / 255f, tintAlpha);
             shader.setFloatUniform("lift", 0.02f);
             glassPaint.setShader(shader);
             c.drawRoundRect(rect, radius, radius, glassPaint);

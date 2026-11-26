@@ -183,6 +183,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View ambient;
     private int origClockColor, origDateColor, origAmpmColor, origGreetingColor, origHeroNameColor, origHeroMetaColor, origDividerColor;
     private java.util.Map<View, android.graphics.drawable.Drawable> origPillBgs;
+    /** The top pills wearing real glass (GlassBackground), fed with the wallpaper's frost. */
+    private final java.util.List<GlassBackground> pillGlass = new java.util.ArrayList<>();
     private TextView heroName;
     /** The dock band decoration, kept so a bright wallpaper can flip it to a dark tint. */
     private DockDecoration dockDecoration;
@@ -497,6 +499,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Fork change: the top-right pill group and the Settings circle wear real glass
+        // (GlassBackground over the wallpaper's frost), like the dock band.
+        installPillGlass(R.id.pillGroup);
+        installPillGlass(R.id.btnSettings);
+        // Fork change: the highlighted tile survives the process dying (reboot, low-memory
+        // kill), not just the activity being recreated — seed the in-memory key from prefs.
+        if (lastFocusedKey == null) {
+            lastFocusedKey = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                    .getString(Config.LAST_FOCUSED_APP_KEY, null);
+        }
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
@@ -766,15 +778,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // this decoration exists, and the direct applyWallpaperTextColors() call in onCreate runs
             // before this too — so hand the band its sampled tint now, or it keeps the light glass.
             dockDecoration.setBrightWallpaper(wallpaperPlayer != null && wallpaperPlayer.bandBright);
-            if (wallpaperPlayer != null) {
-                dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
-            }
+            pushGlass();
             // The root has no size yet during onCreate; hand the frost over again once laid out.
             root.post(() -> {
-                if (dockDecoration != null && wallpaperPlayer != null) {
-                    dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
-                    grid.invalidateItemDecorations();
-                }
+                pushGlass();
+                if (dockDecoration != null) grid.invalidateItemDecorations();
             });
         }
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
@@ -813,8 +821,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
-            // Fork change: the dock row sits 6dp lower than the computed line (owner pick).
-            want += (int) (6 * density);
+            // Fork change: the dock row sits 12dp lower than the computed line (owner pick).
+            want += (int) (12 * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
@@ -2045,6 +2053,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
+        // Fork change: persist the highlight so it survives the process dying.
+        if (lastFocusedKey != null) {
+            getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).edit()
+                    .putString(Config.LAST_FOCUSED_APP_KEY, lastFocusedKey).apply();
+        }
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
         if (card.getWidth() == 0) {
@@ -2161,7 +2174,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             hero.animate().cancel();
             fillHero(position, label);
             hero.setY(y);
-            hero.setTranslationX(0f);
+            // Fork change: the shelf rests 6dp right of its layout spot (owner pick).
+            hero.setTranslationX(6 * density);
             hero.setAlpha(uiAlpha);
             heroShown = true;
             return;
@@ -2176,7 +2190,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.animate().cancel();
             fillHero(position, label);
             hero.setY(y);
-            hero.setTranslationX(0f);
+            hero.setTranslationX(6 * density);
             hero.setAlpha(1f);
             if (ambientGlow) {
                 setAmbient(color);
@@ -2192,7 +2206,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.animate().cancel();
             fillHero(position, label);
             hero.setY(y);
-            hero.setTranslationX(0f);
+            hero.setTranslationX(6 * density);
             hero.animate().alpha(1f).setDuration(260).start();
             if (ambientGlow) {
                 setAmbient(color);
@@ -2204,8 +2218,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             hero.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction(() -> {
                 fillHero(position, label);
                 hero.setY(y);
-                hero.setTranslationX(12 * density);
-                hero.animate().alpha(1f).translationX(0f).setDuration(200).start();
+                hero.setTranslationX(18 * density);
+                hero.animate().alpha(1f).translationX(6 * density).setDuration(200).start();
             }).start();
             if (ambientGlow && advancedEffects) {
                 transitionAmbient(color);
@@ -3043,9 +3057,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tintTopPills(wallpaperPlayer.pillsBright);
         if (dockDecoration != null) {
             dockDecoration.setBrightWallpaper(wallpaperPlayer.bandBright);
-            dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
             grid.invalidateItemDecorations();
         }
+        pushGlass();
         greetingColor = dark ? 0xB3000000 : origGreetingColor;
         // Fork change (learned from free-my-tv): cross-fade the tint change over 600 ms
         // instead of snapping, and scale the top scrim's strength by the corner's measured
@@ -3170,6 +3184,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
+    /** Wraps a top pill's flat background in real glass, keeping the flat one as fallback. */
+    private void installPillGlass(int viewId) {
+        View pill = findViewById(viewId);
+        if (pill == null || pill.getBackground() instanceof GlassBackground) return;
+        GlassBackground glass = new GlassBackground(pill.getBackground());
+        pill.setBackground(glass);
+        pillGlass.add(glass);
+    }
+
+    /** The glass tint the owner picked in Launcher settings (0..1). */
+    private float dockGlassTint() {
+        return getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .getInt(Config.DOCK_GLASS_TINT_KEY, 12) / 100f;
+    }
+
+    /** Hands the wallpaper's frost and the owner's tint to the band's and the pills' glass. */
+    private void pushGlass() {
+        if (wallpaperPlayer == null) return;
+        float tint = dockGlassTint();
+        if (dockDecoration != null) {
+            dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
+            dockDecoration.setTintAlpha(tint);
+        }
+        for (GlassBackground glass : pillGlass) {
+            glass.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
+            glass.setTintAlpha(tint);
+        }
+    }
+
     private void tintTopPills(boolean dark) {
         ViewGroup top = findViewById(R.id.topButtons);
         if (top == null) return;
@@ -3194,6 +3237,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         for (int i = 0; i < top.getChildCount(); i++) {
             View child = top.getChildAt(i);
             if (child.getId() == R.id.btnVpn) continue;   // the VPN pill paints its own state background
+            // Real glass (GlassBackground) adapts to the wallpaper itself — no background swap.
+            if (child.getBackground() instanceof GlassBackground) continue;
             child.setBackground(dark ? brightPillBackground() : origPillBgs.get(child));
         }
         // The glyph ink is applied by applyWallpaperTextColors' transition, not here.

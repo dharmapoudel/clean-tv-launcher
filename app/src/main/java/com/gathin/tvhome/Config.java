@@ -45,6 +45,10 @@ final class Config {
     static final String UI_FADE_DELAY_KEY = "ui_fade_delay_ms";
     static final String UI_FADE_DURATION_KEY = "ui_fade_duration_ms";
     static final String UI_FADE_ENABLED_KEY = "ui_fade_enabled";
+    /** The dock band's and top pills' glass tint strength, in percent (0 = clear). */
+    static final String DOCK_GLASS_TINT_KEY = "dock_glass_tint";
+    /** The last focused tile's app key, so the highlight survives the process dying. */
+    static final String LAST_FOCUSED_APP_KEY = "last_focused_app";
     /** How long the screen stays on after the idle fade completes, before Home sleeps the TV (0 = never). */
     static final String SCREEN_OFF_DELAY_KEY = "screen_off_delay_ms";
     static final String WALLPAPER_ROTATION_ENABLED_KEY = "wallpaper_rotation_enabled";

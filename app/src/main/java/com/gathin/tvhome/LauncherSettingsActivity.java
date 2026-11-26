@@ -40,6 +40,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView fadeDelayChoice;
     private TextView fadeDurationChoice;
     private TextView screenOffChoice;
+    private TextView dockTintChoice;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -144,6 +145,8 @@ public final class LauncherSettingsActivity extends Activity {
         fadeDurationChoice.setOnClickListener(v -> showFadeTimePicker(false));
         screenOffChoice = findViewById(R.id.screenOffChoice);
         screenOffChoice.setOnClickListener(v -> showScreenOffPicker());
+        dockTintChoice = findViewById(R.id.dockTintChoice);
+        dockTintChoice.setOnClickListener(v -> showDockTintPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -304,6 +307,39 @@ public final class LauncherSettingsActivity extends Activity {
     // Fork change: after the idle fade completes, keep the screen on this much longer,
     // then fade to black and sleep. 0 = never (the default).
     private static final long[] SCREEN_OFF_DELAYS = {0L, 60_000L, 120_000L, 300_000L, 600_000L, 1_800_000L};
+    /** Dock glass tint strengths, in percent of the mix toward near-black. */
+    private static final int[] DOCK_TINTS = {0, 12, 25, 45};
+
+    private static String dockTintLabel(int percent) {
+        switch (percent) {
+            case 0: return "Clear";
+            case 12: return "Faint";
+            case 25: return "Light";
+            case 45: return "Medium";
+            default: return percent + "%";
+        }
+    }
+
+    /** How far the dock band's and top pills' glass is mixed toward near-black. */
+    private void showDockTintPicker() {
+        String[] labels = new String[DOCK_TINTS.length];
+        for (int i = 0; i < DOCK_TINTS.length; i++) {
+            labels[i] = dockTintLabel(DOCK_TINTS[i]) + " — " + DOCK_TINTS[i] + "%";
+        }
+        int current = choices.getInt(Config.DOCK_GLASS_TINT_KEY, 12);
+        int checked = 1;
+        for (int i = 0; i < DOCK_TINTS.length; i++) if (DOCK_TINTS[i] == current) checked = i;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dock_tint_label)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    choices.edit().putInt(Config.DOCK_GLASS_TINT_KEY, DOCK_TINTS[which]).apply();
+                    changed();
+                    refresh();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
 
     private void showScreenOffPicker() {
         String[] labels = new String[SCREEN_OFF_DELAYS.length];
@@ -966,6 +1002,8 @@ public final class LauncherSettingsActivity extends Activity {
                 fadeTimeLabel(choices.getLong(Config.SCREEN_OFF_DELAY_KEY, 0L))));
         screenOffChoice.setEnabled(fadeOn);
         screenOffChoice.setAlpha(fadeOn ? 1f : 0.5f);
+        dockTintChoice.setText(getString(R.string.dock_tint_state,
+                dockTintLabel(choices.getInt(Config.DOCK_GLASS_TINT_KEY, 12))));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
