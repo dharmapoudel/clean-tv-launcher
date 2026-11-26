@@ -2141,6 +2141,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
         float y = dockTopInRoot - 6 * density - 26 * density - hero.getHeight();
+        if (uiAlpha < 1f) {
+            // Fork change: the idle fade owns the shelf's alpha. Update its content and place,
+            // but never animate or set it back to full while the UI is fading or faded.
+            hero.animate().cancel();
+            fillHero(position, label);
+            hero.setY(y);
+            hero.setTranslationX(0f);
+            hero.setAlpha(uiAlpha);
+            heroShown = true;
+            return;
+        }
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
 
