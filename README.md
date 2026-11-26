@@ -231,3 +231,9 @@ Forked from the launcher in
 debloat checklists, tooling and the original launcher design are Gathin's.
 MIT licensed; see [LICENSE](LICENSE). Manrope is bundled under the SIL Open
 Font License 1.1 (see `app/src/main/res/font/`).
+
+## Disclaimer
+
+Unofficial personal fork, provided as-is with no warranty. Not affiliated
+with TCL or the upstream project. No artwork or media is included —
+wallpapers shown in the screenshots are the author's own.
