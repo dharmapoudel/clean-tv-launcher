@@ -59,6 +59,10 @@ final class WallpaperPlayer {
     boolean pillsBright;
     /** The top-right corner's measured luminance (0..1), for the scrim's adaptive strength. */
     float pillsLuminance;
+    /** A small, heavily blurred copy of the current wallpaper (screen-aspect centre crop),
+     *  reused in place: the dock band's glass shader samples it as its frost. */
+    volatile Bitmap frostBitmap;
+    private static final int FROST_W = 240;
     /** Fork change: the theme's live wallpaper (wallpaper.mp4) and its player state. */
     private final File liveFile;
     /** Companion audio track next to the live video (same base name, audio extension), when one
@@ -367,6 +371,7 @@ final class WallpaperPlayer {
                         android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
                 if (frame != null) {
                     sampleBrightness(frame);
+                    buildFrost(frame);
                     // The poster is also the still layer's picture while this video is the
                     // wallpaper, so a recreated video surface flashes the video's own frozen
                     // frame instead of whatever still picture would otherwise sit under it.
@@ -529,6 +534,78 @@ final class WallpaperPlayer {
         pillsBright = pillsLuminance > 0.55;
     }
 
+    /** Builds the frost: centre-crop to the screen's aspect (the same crop CENTER_CROP
+     *  shows), shrink to FROST_W wide, then box-blur until the detail is gone. The result is
+     *  drawn into the one reusable frostBitmap so the band shader's input never rebinds. */
+    private void buildFrost(Bitmap src) {
+        try {
+            int sw = src.getWidth(), sh = src.getHeight();
+            if (sw <= 0 || sh <= 0 || width <= 0 || height <= 0) return;
+            float aspect = (float) width / height;
+            int cw = sw, ch = Math.round(sw / aspect);
+            if (ch > sh) {
+                ch = sh;
+                cw = Math.round(sh * aspect);
+            }
+            int fh = Math.max(1, Math.round(FROST_W / aspect));
+            Bitmap cropped = Bitmap.createBitmap(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch);
+            Bitmap small = Bitmap.createScaledBitmap(cropped, FROST_W, fh, true);
+            // The decoded picture carries a density (the cover-scale trick in decode());
+            // without this the canvas below would draw the frost scaled by the density ratio.
+            small.setDensity(Bitmap.DENSITY_NONE);
+            if (cropped != src) cropped.recycle();
+            boxBlur(small, 3);
+            boxBlur(small, 3);
+            boxBlur(small, 3);
+            if (frostBitmap == null || frostBitmap.getWidth() != FROST_W
+                    || frostBitmap.getHeight() != fh) {
+                if (frostBitmap != null) frostBitmap.recycle();
+                frostBitmap = Bitmap.createBitmap(FROST_W, fh, Bitmap.Config.ARGB_8888);
+                frostBitmap.setDensity(Bitmap.DENSITY_NONE);
+            }
+            new Canvas(frostBitmap).drawBitmap(small, 0, 0, null);
+            small.recycle();
+        } catch (RuntimeException | OutOfMemoryError ignored) {
+            // No frost: the band keeps its flat gradient.
+        }
+    }
+
+    /** One separable box-blur pass (horizontal + vertical) over a small bitmap, in place. */
+    private static void boxBlur(Bitmap bitmap, int radius) {
+        int w = bitmap.getWidth(), h = bitmap.getHeight();
+        int[] px = new int[w * h];
+        bitmap.getPixels(px, 0, w, 0, 0, w, h);
+        int[] tmp = new int[w * h];
+        int n = 2 * radius + 1;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int r = 0, g = 0, b = 0, a = 0;
+                for (int k = -radius; k <= radius; k++) {
+                    int c = px[y * w + Math.max(0, Math.min(w - 1, x + k))];
+                    r += (c >> 16) & 0xFF;
+                    g += (c >> 8) & 0xFF;
+                    b += c & 0xFF;
+                    a += (c >> 24) & 0xFF;
+                }
+                tmp[y * w + x] = ((a / n) << 24) | ((r / n) << 16) | ((g / n) << 8) | (b / n);
+            }
+        }
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                int r = 0, g = 0, b = 0, a = 0;
+                for (int k = -radius; k <= radius; k++) {
+                    int c = tmp[Math.max(0, Math.min(h - 1, y + k)) * w + x];
+                    r += (c >> 16) & 0xFF;
+                    g += (c >> 8) & 0xFF;
+                    b += c & 0xFF;
+                    a += (c >> 24) & 0xFF;
+                }
+                px[y * w + x] = ((a / n) << 24) | ((r / n) << 16) | ((g / n) << 8) | (b / n);
+            }
+        }
+        bitmap.setPixels(px, 0, w, 0, 0, w, h);
+    }
+
     private static double regionLuminance(Bitmap bitmap, float x0, float y0, float x1, float y1) {
         int w = bitmap.getWidth(), h = bitmap.getHeight();
         int xs = Math.max(0, (int) (w * x0)), xe = Math.min(w - 1, (int) (w * x1));
@@ -574,6 +651,7 @@ final class WallpaperPlayer {
             if (decoded == null) return null;
             if (dimColor != 0) new Canvas(decoded).drawColor(dimColor);
             sampleBrightness(decoded);
+            buildFrost(decoded);
             // One copy in GPU memory instead of a software bitmap plus its texture; the decode stays off the UI
             // thread for rotations, and Home's return no longer uploads 4-8 MB to the GPU.
             Bitmap gpu = decoded.copy(Bitmap.Config.HARDWARE, false);

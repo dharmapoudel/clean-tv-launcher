@@ -39,6 +39,79 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private boolean brightWallpaper;
     private final int edgeColorNormal;
 
+    // Fork change: real glass for the band (the free-my-tv recipe) — an AGSL shader over a
+    // small blurred copy of the wallpaper (the frost), with a smoky tint, refraction at the
+    // rim and a directional rim light. Needs API 33+; without it (or without a frost) the
+    // flat gradient below is drawn exactly as before.
+    private static final String GLASS_AGSL =
+            "uniform shader frost;\n"
+            + "uniform float2 frostScale;\n"
+            + "uniform float2 offset;\n"
+            + "uniform float2 center;\n"
+            + "uniform float2 halfSize;\n"
+            + "uniform float radius;\n"
+            + "uniform float refraction;\n"
+            + "uniform half4 tint;\n"
+            + "uniform float lift;\n"
+            + "float hash(float2 p) {\n"
+            + "  p = fract(p * float2(123.34, 456.21));\n"
+            + "  p += dot(p, p + 45.32);\n"
+            + "  return fract(p.x * p.y);\n"
+            + "}\n"
+            + "half4 main(float2 xy) {\n"
+            + "  float2 d = xy - center;\n"
+            + "  float2 q = abs(d) - (halfSize - radius);\n"
+            + "  float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;\n"
+            + "  float aa = clamp(0.5 - sd, 0.0, 1.0);\n"
+            + "  if (aa <= 0.0) { return half4(0.0); }\n"
+            + "  float2 dir = d / halfSize;\n"
+            + "  float rim = 1.0 - clamp(-sd * 0.4545, 0.0, 1.0);\n"
+            + "  float light = clamp(-dir.y * 0.75 - dir.x * 0.25 + 0.3, 0.0, 1.0);\n"
+            + "  float sheen = (1.0 - clamp((d.y + halfSize.y) * 0.055, 0.0, 1.0)) * 0.06;\n"
+            + "  float hl = rim * (0.08 + 0.5 * light) + sheen;\n"
+            + "  float edge = 1.0 - clamp(-sd * 0.0714, 0.0, 1.0);\n"
+            + "  float2 sxy = xy - dir * (edge * edge * refraction);\n"
+            + "  half3 bg = frost.eval((sxy + offset) * frostScale).rgb * 1.12 + half3(0.02);\n"
+            + "  half3 col = mix(bg, tint.rgb, tint.a);\n"
+            + "  col += half3(lift);\n"
+            + "  col *= 1.0 - 0.2 * (1.0 - clamp(-sd * 0.0625, 0.0, 1.0)) * clamp(dir.y, 0.0, 1.0);\n"
+            + "  col += half3(hl);\n"
+            + "  col += (hash(xy) - 0.5) * 0.0039;\n"
+            + "  return half4(col * aa, aa);\n"
+            + "}\n";
+    private final Paint glassPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** The RuntimeShader, held as its base class so older APIs never resolve it. */
+    private android.graphics.Shader glassShader;
+    private android.graphics.BitmapShader frostShader;
+    private android.graphics.Bitmap frostBitmap, frostShaderBitmap;
+    private int frostScreenW, frostScreenH;
+    private final int[] screenLoc = new int[2];
+
+    /** Hands the band the wallpaper's frost (a small blurred copy) and the screen size it
+     *  maps to. Creates the glass shader on first use; any failure leaves it null and the
+     *  band keeps its flat gradient. */
+    void setFrost(android.graphics.Bitmap frost, int screenW, int screenH) {
+        if (frost == null || screenW <= 0 || screenH <= 0) return;
+        frostBitmap = frost;
+        frostScreenW = screenW;
+        frostScreenH = screenH;
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            try {
+                if (glassShader == null) {
+                    glassShader = new android.graphics.RuntimeShader(GLASS_AGSL);
+                }
+                if (frost != frostShaderBitmap) {
+                    frostShader = new android.graphics.BitmapShader(frost,
+                            Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    ((android.graphics.RuntimeShader) glassShader).setInputShader("frost", frostShader);
+                    frostShaderBitmap = frost;
+                }
+            } catch (RuntimeException ignored) {
+                glassShader = null;
+            }
+        }
+    }
+
     /**
      * @param translucent the cinematic shelf's band: the artwork and the glow show through it.
      * @param names       the dock tiles show their names, so the band reaches down over them.
@@ -160,6 +233,27 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
                     Shader.TileMode.CLAMP));
             shaderTop = rect.top;
             shaderBottom = rect.bottom;
+        }
+        if (glassShader != null && frostBitmap != null) {
+            // The glass band: the frost is sampled in screen coordinates, so the grid's
+            // place on the screen goes in as the offset. The shader draws its own rim
+            // light, so the flat edge stroke is skipped.
+            android.graphics.RuntimeShader shader = (android.graphics.RuntimeShader) glassShader;
+            parent.getLocationOnScreen(screenLoc);
+            shader.setFloatUniform("frostScale",
+                    frostBitmap.getWidth() / (float) frostScreenW,
+                    frostBitmap.getHeight() / (float) frostScreenH);
+            shader.setFloatUniform("offset", screenLoc[0], screenLoc[1]);
+            shader.setFloatUniform("center", rect.centerX(), rect.centerY());
+            shader.setFloatUniform("halfSize", rect.width() / 2f, rect.height() / 2f);
+            shader.setFloatUniform("radius", radius);
+            shader.setFloatUniform("refraction", 10 * density);
+            // Smoked glass: the frost mixed 45% toward near-black, lifted a touch.
+            shader.setFloatUniform("tint", 0x11 / 255f, 0x11 / 255f, 0x13 / 255f, 0.45f);
+            shader.setFloatUniform("lift", 0.02f);
+            glassPaint.setShader(shader);
+            c.drawRoundRect(rect, radius, radius, glassPaint);
+            return;
         }
         // Fork change: no dark border in bright mode (a dark edge line read too heavy);
         // the band keeps its normal faint white edge in both modes.

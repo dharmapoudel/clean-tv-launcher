@@ -58,8 +58,10 @@ helper, and how to undo everything.
   the app name. On a bright wallpaper the text and pill glyphs go dark; on a
   dark wallpaper everything stays white. One generic rule, driven by the
   sampled brightness — nothing is tuned per image.
-- The dock band is always the same faint white glass, bright wallpaper or
-  dark.
+- The dock band is real glass: a GPU shader over a small blurred copy of
+  the wallpaper, mixed toward a dark smoked tint, with the background
+  bending at the rim and a soft rim light — on Android 13+; older sets
+  keep the flat faint white glass.
 - Long-press OK on a tile to replace it, move it, or see app info. The row is
   yours; a reinstall can reset on-TV rearrangements, so rearrange last.
 
@@ -213,8 +215,9 @@ Over the upstream launcher:
 - App library moved into the Settings long-press menu; the grid's library
   pill removed for good.
 - App name label: ALL CAPS, smaller, lower, Manrope Medium.
-- Focus border removed entirely (scale marks focus); dock band is one
-  unconditional faint white glass.
+- Focus border removed entirely (scale marks focus); the dock band is a
+  shader-drawn smoked glass over a blurred copy of the wallpaper (idea
+  from free-my-tv), with the old flat glass kept as the fallback.
 - The wallpaper pick is no longer reset by theme pushes, and the settings
   screen can no longer clear it by being opened.
 - The live-wallpaper video layer sits at the back of the wallpaper root —

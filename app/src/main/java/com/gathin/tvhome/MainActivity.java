@@ -766,6 +766,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // this decoration exists, and the direct applyWallpaperTextColors() call in onCreate runs
             // before this too — so hand the band its sampled tint now, or it keeps the light glass.
             dockDecoration.setBrightWallpaper(wallpaperPlayer != null && wallpaperPlayer.bandBright);
+            if (wallpaperPlayer != null) {
+                dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
+            }
+            // The root has no size yet during onCreate; hand the frost over again once laid out.
+            root.post(() -> {
+                if (dockDecoration != null && wallpaperPlayer != null) {
+                    dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
+                    grid.invalidateItemDecorations();
+                }
+            });
         }
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
@@ -3033,6 +3043,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tintTopPills(wallpaperPlayer.pillsBright);
         if (dockDecoration != null) {
             dockDecoration.setBrightWallpaper(wallpaperPlayer.bandBright);
+            dockDecoration.setFrost(wallpaperPlayer.frostBitmap, root.getWidth(), root.getHeight());
             grid.invalidateItemDecorations();
         }
         greetingColor = dark ? 0xB3000000 : origGreetingColor;
