@@ -349,22 +349,38 @@
                 android:clipToPadding="false"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/btnInputs"
-                    style="@style/TopButton"
-                    android:text="@string/inputs"
-                    android:drawableStart="@drawable/ic_input"
-                    android:nextFocusDown="@+id/grid" />
+                <!-- Inputs + Wi-Fi share one pill (owner pick): the group wears the glass,
+                     the two buttons inside paint a white disc when focused. Settings
+                     stays its own circle, below. -->
+                <LinearLayout
+                    android:id="@+id/pillGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/pill_group_bg"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/btnWifi"
-                    style="@style/TopButton"
-                    android:maxWidth="180dp"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:text="@string/wifi"
-                    android:drawableStart="@drawable/ic_wifi"
-                    android:nextFocusDown="@+id/grid" />
+                    <TextView
+                        android:id="@+id/btnInputs"
+                        style="@style/TopButton"
+                        android:layout_marginStart="0dp"
+                        android:background="@drawable/pill_inner_bg"
+                        android:text="@string/inputs"
+                        android:drawableStart="@drawable/ic_input"
+                        android:nextFocusDown="@+id/grid" />
+
+                    <TextView
+                        android:id="@+id/btnWifi"
+                        style="@style/TopButton"
+                        android:layout_marginStart="0dp"
+                        android:background="@drawable/pill_inner_bg"
+                        android:maxWidth="180dp"
+                        android:singleLine="true"
+                        android:ellipsize="end"
+                        android:text="@string/wifi"
+                        android:drawableStart="@drawable/ic_wifi"
+                        android:nextFocusDown="@+id/grid" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/btnVpn"

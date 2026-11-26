@@ -3032,9 +3032,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private java.util.Map<View, android.content.res.ColorStateList> origPillTextColors;
     private java.util.Map<View, android.content.res.ColorStateList> origPillTints;
 
+    /** Every TextView under a top-bar container, the pill group's buttons included. */
+    private static void collectPillTextViews(View view, java.util.List<TextView> out) {
+        if (view instanceof TextView) out.add((TextView) view);
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) collectPillTextViews(group.getChildAt(i), out);
+        }
+    }
+
     private void tintTopPills(boolean dark) {
         ViewGroup top = findViewById(R.id.topButtons);
         if (top == null) return;
+        // Backgrounds swap on the bar's direct children only (the shared pill group is one
+        // of them; its inner buttons keep their transparent/focus-disc background in both
+        // modes). The dark-ink glyph tint reaches every button, grouped ones included.
+        java.util.List<TextView> pillTexts = new java.util.ArrayList<>();
+        collectPillTextViews(top, pillTexts);
         if (origPillBgs == null) {
             origPillBgs = new java.util.HashMap<>();
             origPillTextColors = new java.util.HashMap<>();
@@ -3042,10 +3056,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             for (int i = 0; i < top.getChildCount(); i++) {
                 View child = top.getChildAt(i);
                 origPillBgs.put(child, child.getBackground());
-                if (child instanceof TextView) {
-                    origPillTextColors.put(child, ((TextView) child).getTextColors());
-                    origPillTints.put(child, ((TextView) child).getCompoundDrawableTintList());
-                }
+            }
+            for (TextView pill : pillTexts) {
+                origPillTextColors.put(pill, pill.getTextColors());
+                origPillTints.put(pill, pill.getCompoundDrawableTintList());
             }
         }
         android.content.res.ColorStateList ink = new android.content.res.ColorStateList(
@@ -3055,10 +3069,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             View child = top.getChildAt(i);
             if (child.getId() == R.id.btnVpn) continue;   // the VPN pill paints its own state background
             child.setBackground(dark ? brightPillBackground() : origPillBgs.get(child));
-            if (child instanceof TextView) {
-                ((TextView) child).setTextColor(dark ? ink : origPillTextColors.get(child));
-                ((TextView) child).setCompoundDrawableTintList(dark ? ink : origPillTints.get(child));
-            }
+        }
+        for (TextView pill : pillTexts) {
+            pill.setTextColor(dark ? ink : origPillTextColors.get(pill));
+            pill.setCompoundDrawableTintList(dark ? ink : origPillTints.get(pill));
         }
     }
 

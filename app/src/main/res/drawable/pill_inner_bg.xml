@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A button inside the shared top pill (pill_group_bg): invisible until focused,
+     then a solid white disc — the same focus paint as pill_bg's focused state. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5FFFFFF" />
+            <corners android:radius="21dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <corners android:radius="21dp" />
+        </shape>
+    </item>
+</selector>
