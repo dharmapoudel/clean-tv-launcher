@@ -26,6 +26,10 @@ Then make it your home screen — either run `./build-and-install.sh` from a
 source checkout (below), or set it manually and disable the stock launcher.
 Building from source works too; see [Build and install](#build-and-install).
 
+**Full walkthrough: [INSTALL.md](INSTALL.md)** — connecting over ADB, the
+backup and Wi-Fi checks to run first, setting Home, enabling the key
+helper, and how to undo everything.
+
 ![Home over a photo wallpaper](docs/images/home-photo-wallpaper.jpg)
 
 ## Screenshots
