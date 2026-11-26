@@ -57,7 +57,7 @@ final class WallpaperPlayer {
     /** Whether the top-right corner, where the pills sit, is bright — sampled separately because
      *  a picture can be dark at the clock (top-left) and bright at the pills, e.g. Photo 20. */
     boolean pillsBright;
-    /** Custom for this set: the theme's live wallpaper (wallpaper.mp4) and its player state. */
+    /** Fork change: the theme's live wallpaper (wallpaper.mp4) and its player state. */
     private final File liveFile;
     /** Companion audio track next to the live video (same base name, audio extension), when one
      *  exists: Exhibit-style pieces ship their sound as a separate file, so the video itself is
@@ -216,7 +216,7 @@ final class WallpaperPlayer {
         return uiFadeFraction * SOUND_SCALE;
     }
 
-    /** Custom for this set: a live wallpaper's sound follows Home's chrome fade (0 while the UI is up).
+    /** Fork change: a live wallpaper's sound follows Home's chrome fade (0 while the UI is up).
      *  The sound lives on the companion audio player when there is one, else on the video player. */
     void setUiFadeFraction(float fraction) {
         uiFadeFraction = fraction;

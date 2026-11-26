@@ -127,7 +127,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Back on Home opens ClockActivity (config.xml, back_opens_clock). */
     private boolean backOpensClock;
     private final Runnable showIdleClock = () -> startActivity(new Intent(this, ClockActivity.class));
-    // Custom for this set (owner request): after a minute idle, Home's chrome fades out over two
+    // Fork change: after a minute idle, Home's chrome fades out over two
     // minutes until only the wallpaper is left; any interaction brings it back. A live wallpaper's
     // sound ramps up with the same fraction. Start time and duration are configurable in Launcher
     // settings (Config.UI_FADE_DELAY_KEY / UI_FADE_DURATION_KEY); these are the defaults.
@@ -4016,7 +4016,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
-        // Custom for this set (owner request): All apps lives here, not as a tile at the row's end.
+        // Fork change: All apps lives here, not as a tile at the row's end.
         if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.app_library, this::onLibraryRequested);
         if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
                 new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));

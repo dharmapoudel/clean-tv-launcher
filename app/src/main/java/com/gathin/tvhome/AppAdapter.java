@@ -233,7 +233,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.animations = cfg.animations;
         this.advancedEffects = cfg.animations && cfg.advancedEffects;
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
-        // Custom for this set: no App library pill in the grid — the library opens from the top
+        // Fork change: no App library pill in the grid — the library opens from the top
         // Settings button's long-press popup instead.
         this.showLibrary = false;
         this.reducedMotion = cfg.reducedMotion;
@@ -687,7 +687,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (position < 0 || position >= items.size()) return 0xFF444444;
         Entry e = items.get(position);
         if (e.ambient == 0) {
-            // Custom for this set (owner request): a white tile takes its accent from the coloured
+            // Fork change: a white tile takes its accent from the coloured
             // artwork on the tile (sampled by hue, white ignored), not from the banner's average,
             // which is a pale tint that reads as white. The bare icon can itself be mostly white
             // (the Play Store bag), so the banner is sampled, not the icon.

@@ -10,6 +10,22 @@ This is a fork of the launcher in
 tuned on a TCL 75QM6K Pro (Google TV, Android 14). The changes over upstream
 are listed under [What this fork adds](#what-this-fork-adds).
 
+## Download
+
+Grab the APK from the
+[Releases page](https://github.com/dharmapoudel/clean-tv-launcher/releases)
+and sideload it (the APK is signed with a debug key, which is fine for
+sideloading):
+
+```sh
+adb connect <tv-ip>
+adb install clean-tv-launcher-3.6.apk
+```
+
+Then make it your home screen — either run `./build-and-install.sh` from a
+source checkout (below), or set it manually and disable the stock launcher.
+Building from source works too; see [Build and install](#build-and-install).
+
 ![Home over a photo wallpaper](docs/images/home-photo-wallpaper.jpg)
 
 ## Screenshots
@@ -53,30 +69,31 @@ Three kinds, all living in the launcher's files folder
 - **`videos/`** — live wallpapers (`.mp4`, looping). A video may have a
   **companion audio track**: a file with the same base name and an audio
   extension (`.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`) next to it. The video
-  then plays muted and the companion supplies the sound — this mirrors how
-  TCL's Exhibit app ships its RELAX pieces (silent video file, separate
-  audio track). A video without a companion plays its own embedded track.
+  then plays muted and the companion supplies the sound — some TV art apps
+  ship their ambient pieces exactly this way, as a silent video file with a
+  separate audio track. A video without a companion plays its own embedded
+  track.
 
 ### The picker
 
 Launcher settings → **Wallpaper** opens the picker:
 
 - A **Rotate wallpapers** switch and **interval chips** (5 / 10 / 15 / 30 /
-  60 / 90 min) live in the side rail. The model is merged: the switch is the
-  only rotation control. Turning it on clears any pinned pick; picking any
+  60 / 90 min) live in the side rail. There is a single rotation control:
+  the switch. Turning it on clears any pinned pick; picking any
   wallpaper (or **None (black screen)**) turns rotation off and pins that
   pick.
 - Previews are **equal-size 16:9 cards** with the name on a bottom scrim and
   a small play triangle on videos. The current pick carries a **CURRENT**
   tag.
 - Previews load from **pre-generated thumbnails** in `files/thumbs/`, named
-  `<wallpaper file name>.jpg` (e.g. `sv-spring-rain.mp4.jpg`). Probing 4K
+  `<wallpaper file name>.jpg` (e.g. `spring-rain.mp4.jpg`). Probing 4K
   videos on the TV takes seconds per frame, so generate the thumbnails on a
   computer and push them:
 
   ```sh
   # video frame at 1s, 480px wide
-  ffmpeg -ss 1 -i videos/sv-spring-rain.mp4 -frames:v 1 -vf scale=480:-2 -q:v 4 thumbs/sv-spring-rain.mp4.jpg
+  ffmpeg -ss 1 -i videos/spring-rain.mp4 -frames:v 1 -vf scale=480:-2 -q:v 4 thumbs/spring-rain.mp4.jpg
   # photo
   ffmpeg -i wallpapers/photo-03.jpg -vf scale=480:-2 -q:v 4 thumbs/photo-03.jpg.jpg
   ```
@@ -159,17 +176,16 @@ Theme: the launcher reads an optional theme (wallpaper, keys, glass style,
 hidden apps, …) from JSON in its files folder. The upstream
 [cleanyourtv](https://github.com/Gathin23/cleanyourtv) repo's `tools/theme.sh`
 pushes one; its `tools/tv.py` is also what `build-and-install.sh` names in
-its recovery hint if a handover fails.
+its recovery hint if an install fails.
 
 ## What this fork adds
 
 Over the upstream launcher:
 
-- Wallpaper picker rebuilt as a side-rail popup (variant E): rotation
-  switch + interval chips inside the popup, merged rotate/pick model,
-  near-black panel with white accents, equal-size cards sized from the
-  measured grid width, CURRENT tag, instant previews from pre-generated
-  `thumbs/`.
+- Wallpaper picker rebuilt as a popup with a control rail on the left:
+  rotation switch and interval chips inside the popup, a near-black panel
+  with white accents, equal-size preview cards, a CURRENT tag on the active
+  wallpaper, and instant previews from pre-generated `thumbs/`.
 - Live video wallpapers with **companion audio tracks**, sound tied to the
   idle fade and capped at 50%.
 - Idle fade made configurable (enable checkbox, start delay, duration) and
@@ -187,9 +203,9 @@ Over the upstream launcher:
 - The live-wallpaper video layer sits at the back of the wallpaper root —
   on top it covers the whole Home UI — and the still layer under a video
   holds the video's poster frame.
-- No separate "Theme wallpaper" picker card: on the reference set the
-  theme's `wallpaper.jpg` is also a collection photo, so the card was the
-  same picture twice.
+- No duplicate "Theme wallpaper" picker card: if the theme's
+  `wallpaper.jpg` is also in the photo collection, it is listed once — as
+  that photo.
 
 ## Credits and license
 

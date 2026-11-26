@@ -38,7 +38,7 @@ public class GlassView extends View {
         radius = 20f * density;
         rim.setStyle(Paint.Style.STROKE);
         rim.setStrokeWidth(1.5f * density);
-        // Custom for this set (owner request): the focus rim takes the tile's accent colour.
+        // Fork change: the focus rim takes the tile's accent colour.
         rim.setColor(0xCC8C8C8C);
         rimEdge.setStyle(Paint.Style.STROKE);
         rimEdge.setColor(0xD9000000);
@@ -49,7 +49,7 @@ public class GlassView extends View {
         setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
-    /** Tints the rim and the outer glow with the tile's accent (owner request on this set). */
+    /** Tints the rim and the outer glow with the tile's accent (fork change). */
     void setAccent(int argb) {
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
@@ -104,7 +104,7 @@ public class GlassView extends View {
             }
         }
         if (flat) {
-            // Custom for this set (owner request): no focus border at all — the focused tile's
+            // Fork change: no focus border at all — the focused tile's
             // larger scale alone marks it.
             return;
         }

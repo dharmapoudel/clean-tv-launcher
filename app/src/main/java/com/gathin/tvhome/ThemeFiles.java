@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 /** The files ThemeProvider may write or delete under Config.dir, by the URI's path segments. */
 final class ThemeFiles {
     static final String WALLPAPERS = "wallpapers";
-    /** Custom for this set: the live wallpapers (wallpaper.mp4) collection folder. */
+    /** Fork change: the live wallpapers (wallpaper.mp4) collection folder. */
     static final String VIDEOS = "videos";
     /** The names tools/theme.sh accepts for a collection image, and the types WallpaperRotation reads. */
     private static final Pattern IMAGE = Pattern.compile("[A-Za-z0-9_.-]+\\.(jpg|jpeg|png|webp)",

@@ -216,7 +216,7 @@ final class Config {
     final File wallpaper;
     /** Rotating theme images, or the single wallpaper when no collection is configured. */
     final List<File> wallpapers;
-    /** Custom for this set: the theme's live wallpaper (wallpaper.mp4), or null for still pictures. */
+    /** Fork change: the theme's live wallpaper (wallpaper.mp4), or null for still pictures. */
     File liveWallpaper;
     final int wallpaperRotationMinutes;
     final int wallpaperDim;
@@ -697,7 +697,7 @@ final class Config {
         boolean wallpaperEnabled = json == null || bool(json, "wallpaper", true);
         if (!wallpaperEnabled) wallpaper = null;
         int rotationMinutes = json == null ? 0 : integer(json, "wallpaper_rotation_minutes", 0, 0, 1440);
-        // Custom for this set: the on-TV rotation setting (Launcher settings) wins over the theme —
+        // Fork change: the on-TV rotation setting (Launcher settings) wins over the theme —
         // enabled means rotate the wallpapers/ collection every chosen number of minutes.
         if (choices.getBoolean(WALLPAPER_ROTATION_ENABLED_KEY, false)) {
             rotationMinutes = Math.max(1, Math.min(1440,
@@ -750,7 +750,7 @@ final class Config {
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly, inputsCecStateOnly,
                 Math.max(0, Math.min(600, openOnStartNetworkWait)), openOnStartOnWake, iconOnlyVpn, clockFormat, backOpensClock, glowSnap,
                 settingsKeyClearTask);
-        // Custom for this set: a theme's live wallpaper (wallpaper.mp4) plays behind Home, unless an
+        // Fork change: a theme's live wallpaper (wallpaper.mp4) plays behind Home, unless an
         // on-TV wallpaper pick has pinned a still picture instead. A pick naming a file in the
         // videos/ collection (made in the settings wallpaper picker) plays that video instead.
         if (wallpaperChoice != null && wallpaperChoice.endsWith(".mp4") && dir != null) {
@@ -802,7 +802,7 @@ final class Config {
             // Existing preferences survive an app upgrade, unless the first launch follows an
             // explicit theme push or reset by the updated tools.
             SharedPreferences.Editor editor = choices.edit();
-            // Custom for this set: WALLPAPER_CHOICE_KEY is deliberately NOT reset — the owner's
+            // Fork change: WALLPAPER_CHOICE_KEY is deliberately NOT reset — the owner's
             // wallpaper pick survives theme pushes and reinstalls until they change it.
             if (!"absent".equals(token)) editor.remove("columns").remove("animations")
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY)

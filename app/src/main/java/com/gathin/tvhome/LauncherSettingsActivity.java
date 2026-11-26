@@ -202,7 +202,7 @@ public final class LauncherSettingsActivity extends Activity {
         for (int i = views.length - 1; i >= 0; i--) row.addView(views[i]);
     }
 
-    // Custom for this set: Private DNS as a launcher setting — a predefined provider list
+    // Fork change: Private DNS as a launcher setting — a predefined provider list
     // written to the system Global settings (needs the WRITE_SECURE_SETTINGS grant, which the
     // install script leaves in place for this build).
     private static final String[][] DNS_PROVIDERS = {
@@ -269,7 +269,7 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    // Custom for this set: the idle fade-out is configurable — an on/off checkbox plus start
+    // Fork change: the idle fade-out is configurable — an on/off checkbox plus start
     // time and duration pickers, stored in the launcher settings prefs MainActivity reads.
     private static final long[] FADE_DELAYS = {30_000L, 60_000L, 120_000L, 300_000L, 0L};
     private static final long[] FADE_DURATIONS = {30_000L, 60_000L, 120_000L, 180_000L, 300_000L};
@@ -301,7 +301,7 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    // Custom for this set: after the idle fade completes, keep the screen on this much longer,
+    // Fork change: after the idle fade completes, keep the screen on this much longer,
     // then fade to black and sleep. 0 = never (the default).
     private static final long[] SCREEN_OFF_DELAYS = {0L, 60_000L, 120_000L, 300_000L, 600_000L, 1_800_000L};
 
@@ -344,7 +344,7 @@ public final class LauncherSettingsActivity extends Activity {
         }
     }
 
-    // Custom for this set: wallpaper rotation lives inside the wallpaper popup (owner pick,
+    // Fork change: wallpaper rotation lives inside the wallpaper popup (owner pick,
     // variant E) — a switch plus interval chips in the popup's side rail, stored in the
     // launcher settings prefs Config reads.
     private static final int[] ROTATION_INTERVALS = {5, 10, 15, 30, 60, 90};
@@ -353,7 +353,7 @@ public final class LauncherSettingsActivity extends Activity {
         return minutes + " min";
     }
 
-    // Custom for this set: the wallpaper picker is a preview grid — picture thumbnails and live
+    // Fork change: the wallpaper picker is a preview grid — picture thumbnails and live
     // wallpaper (videos/) frames side by side — instead of a plain filename list.
     // A small pool, not one thread: a single slow 4K video-frame probe must not starve
     // every other preview behind it.
@@ -370,9 +370,9 @@ public final class LauncherSettingsActivity extends Activity {
         File dir = Config.dir(this);
         List<File> images = new java.util.ArrayList<>(WallpaperRotation.images(
                 dir == null ? null : new File(dir, "wallpapers")));
-        // No separate "Theme wallpaper" card (owner's call): on this set the theme's
-        // wallpaper.jpg is Photo 3, which the collection already offers — the extra card
-        // was the same picture twice. The file itself stays; it is the theme default.
+        // No separate "Theme wallpaper" card: the theme's wallpaper.jpg can also be a
+        // collection photo, which the collection already offers — the extra card would
+        // be the same picture twice. The file itself stays; it is the theme default.
         List<File> videos = new java.util.ArrayList<>();
         File[] videoFiles = dir == null ? null : new File(dir, "videos").listFiles(
                 f -> f.isFile() && f.getName().toLowerCase(java.util.Locale.US).endsWith(".mp4"));

@@ -34,7 +34,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final boolean singleRow;
     /** dock_band_all: in a single row, the band runs behind every app instead of the dock apps only. */
     private final boolean bandAll;
-    /** Custom for this set: on a bright wallpaper the band's glass flips to a dark tint. */
+    /** Whether the wallpaper under the band is bright. The band's paint is the same
+     *  either way (see onDraw) — the flag only forces the gradient to be remade on a flip. */
     private boolean brightWallpaper;
     private final int edgeColorNormal;
 
@@ -65,11 +66,11 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         edge.setColor(edgeColorNormal);
     }
 
-    /** Custom for this set: flip the band to a dark tint on a bright wallpaper (and back). */
+    /** Note a bright (or dark) wallpaper under the band; remakes the gradient on a flip. */
     void setBrightWallpaper(boolean bright) {
         if (brightWallpaper == bright) return;
         brightWallpaper = bright;
-        shaderTop = Float.NaN;   // force the gradient to be remade in the new tint
+        shaderTop = Float.NaN;   // force the gradient to be remade
     }
 
     /** Concentric corners: the band's radius is the tiles' radius plus the band's padding around them. */
@@ -152,15 +153,15 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         rect.bottom += namesRoom;
         if (lightGlass && (rect.top != shaderTop || rect.bottom != shaderBottom)) {
             // The pills' glass (pill_bg: white, 18% fading to 8%), a little fainter over this much larger area.
-            // Custom for this set: this faint white glass in both modes — on bright wallpapers the
-            // owner picked it over a stronger white glass and over a dark tint.
+            // Fork change: this faint white glass in both modes — on bright wallpapers it
+            // was chosen over a stronger white glass and over a dark tint.
             band.setShader(new LinearGradient(0, rect.top, 0, rect.bottom,
                     0x24FFFFFF, 0x0DFFFFFF,
                     Shader.TileMode.CLAMP));
             shaderTop = rect.top;
             shaderBottom = rect.bottom;
         }
-        // Custom for this set: no dark border in bright mode (owner: the dark edge line read too heavy);
+        // Fork change: no dark border in bright mode (a dark edge line read too heavy);
         // the band keeps its normal faint white edge in both modes.
         edge.setColor(edgeColorNormal);
         c.drawRoundRect(rect, radius, radius, band);
