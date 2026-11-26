@@ -57,6 +57,8 @@ final class WallpaperPlayer {
     /** Whether the top-right corner, where the pills sit, is bright — sampled separately because
      *  a picture can be dark at the clock (top-left) and bright at the pills, e.g. Photo 20. */
     boolean pillsBright;
+    /** The top-right corner's measured luminance (0..1), for the scrim's adaptive strength. */
+    float pillsLuminance;
     /** Fork change: the theme's live wallpaper (wallpaper.mp4) and its player state. */
     private final File liveFile;
     /** Companion audio track next to the live video (same base name, audio extension), when one
@@ -523,7 +525,8 @@ final class WallpaperPlayer {
         // glass was invisible). Measured band regions: bright-bottom photos 0.51-0.88,
         // dark-bottom photos (1, 3, 5) 0.24-0.29.
         bandBright = regionLuminance(bitmap, 0.04f, 0.76f, 0.96f, 0.97f) > 0.45;
-        pillsBright = regionLuminance(bitmap, 0.72f, 0f, 1f, 0.20f) > 0.55;
+        pillsLuminance = (float) regionLuminance(bitmap, 0.72f, 0f, 1f, 0.20f);
+        pillsBright = pillsLuminance > 0.55;
     }
 
     private static double regionLuminance(Bitmap bitmap, float x0, float y0, float x1, float y1) {

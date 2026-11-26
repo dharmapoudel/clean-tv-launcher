@@ -602,6 +602,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // negative margins). The fade reaches full transparency at 370dp, inside every edge
         // of the view, so no side of the patch shows a hard line.
         View topScrim = findViewById(R.id.topScrim);
+        topScrimView = topScrim;
         if (topScrim != null) {
             float d = getResources().getDisplayMetrics().density;
             int bw = (int) (600 * d), bh = (int) (380 * d);
@@ -1408,7 +1409,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void setUiAlpha(float alpha) {
         uiAlpha = alpha;
-        for (View v : uiChrome()) if (v != null) v.setAlpha(alpha);
+        for (View v : uiChrome()) if (v != null) {
+            // The top scrim's own strength (set by the wallpaper's corner brightness) rides under the fade.
+            v.setAlpha(v == topScrimView ? alpha * scrimStrength : alpha);
+        }
         if (wallpaperPlayer != null) wallpaperPlayer.setUiFadeFraction(1f - alpha);
         if (alpha <= 0f) scheduleScreenOff(); else cancelScreenOff();
     }
@@ -3014,23 +3018,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- race-weekend panel (a theme's race_calendar) -----------------------------------------------
 
     /** Dark header/hero text on a bright wallpaper, the designed colours on a dark one (WallpaperPlayer samples it). */
+    private View topScrimView;
+    /** The top scrim's strength, from the top-right corner's measured luminance (0.30..1). */
+    private float scrimStrength = 1f;
+    private android.animation.ValueAnimator tintAnimator;
+    private int dividerShown = Integer.MIN_VALUE;
+
     private void applyWallpaperTextColors() {
         if (wallpaperPlayer == null) return;
         boolean dark = wallpaperPlayer.topBright;
-        TextView clock = findViewById(R.id.clock);
-        TextView ampm = findViewById(R.id.ampm);
-        TextView date = findViewById(R.id.date);
-        clock.setTextColor(dark ? 0xE6000000 : origClockColor);
-        if (ampm != null) ampm.setTextColor(dark ? 0xB3000000 : origAmpmColor);
-        date.setTextColor(dark ? 0xB3000000 : origDateColor);
-        if (shamsiDate != null) shamsiDate.setTextColor(dark ? 0xB3000000 : origDateColor);
-        if (lunarDate != null) lunarDate.setTextColor(dark ? 0xB3000000 : origDateColor);
-        greetingColor = dark ? 0xB3000000 : origGreetingColor;
-        if (greeting != null) greeting.setTextColor(greetingColor);
-        findViewById(R.id.clockDivider).setBackgroundColor(dark ? 0x66000000 : origDividerColor);
         boolean heroDark = wallpaperPlayer.heroBright;
-        heroName.setTextColor(heroDark ? 0xE6000000 : origHeroNameColor);
-        if (heroMeta != null) heroMeta.setTextColor(heroDark ? 0xB3000000 : origHeroMetaColor);
         // Each surface follows its own corner (owner): text the top-left, the pills the
         // top-right, the band the bottom — sampled separately in WallpaperPlayer.
         tintTopPills(wallpaperPlayer.pillsBright);
@@ -3038,6 +3035,114 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dockDecoration.setBrightWallpaper(wallpaperPlayer.bandBright);
             grid.invalidateItemDecorations();
         }
+        greetingColor = dark ? 0xB3000000 : origGreetingColor;
+        // Fork change (learned from free-my-tv): cross-fade the tint change over 600 ms
+        // instead of snapping, and scale the top scrim's strength by the corner's measured
+        // luminance instead of a fixed alpha. Endpoints are exactly the old colours.
+        final java.util.List<TextView> views = new java.util.ArrayList<>();
+        final java.util.List<Integer> starts = new java.util.ArrayList<>();
+        final java.util.List<Integer> targets = new java.util.ArrayList<>();
+        TextView clock = findViewById(R.id.clock);
+        TextView ampm = findViewById(R.id.ampm);
+        TextView date = findViewById(R.id.date);
+        addTintTarget(views, starts, targets, clock, dark ? 0xE6000000 : origClockColor);
+        addTintTarget(views, starts, targets, ampm, dark ? 0xB3000000 : origAmpmColor);
+        addTintTarget(views, starts, targets, date, dark ? 0xB3000000 : origDateColor);
+        addTintTarget(views, starts, targets, shamsiDate, dark ? 0xB3000000 : origDateColor);
+        addTintTarget(views, starts, targets, lunarDate, dark ? 0xB3000000 : origDateColor);
+        addTintTarget(views, starts, targets, greeting, greetingColor);
+        addTintTarget(views, starts, targets, heroName, heroDark ? 0xE6000000 : origHeroNameColor);
+        addTintTarget(views, starts, targets, heroMeta, heroDark ? 0xB3000000 : origHeroMetaColor);
+        final View divider = findViewById(R.id.clockDivider);
+        if (dividerShown == Integer.MIN_VALUE) dividerShown = origDividerColor;
+        final int dividerStart = dividerShown;
+        final int dividerTarget = dark ? 0x66000000 : origDividerColor;
+        // Pill ink: the pills share one selector, so one start/target pair covers them all.
+        final java.util.List<TextView> pillTexts = new java.util.ArrayList<>();
+        ViewGroup top = findViewById(R.id.topButtons);
+        if (top != null) collectPillTextViews(top, pillTexts);
+        final boolean pillsDark = wallpaperPlayer.pillsBright;
+        int inkStart = pillTexts.isEmpty() ? 0xFFFFFFFF
+                : pillTexts.get(0).getTextColors().getDefaultColor();
+        int inkTarget = 0xFFFFFFFF;
+        if (!pillTexts.isEmpty() && origPillTextColors != null
+                && origPillTextColors.get(pillTexts.get(0)) != null) {
+            inkTarget = pillsDark ? 0xE6000000
+                    : origPillTextColors.get(pillTexts.get(0)).getDefaultColor();
+        }
+        final int inkFrom = inkStart, inkTo = inkTarget;
+        final float scrimFrom = scrimStrength;
+        float lum = wallpaperPlayer.pillsLuminance;
+        final float scrimTo = 0.30f + 0.70f * Math.max(0f, Math.min(1f, (lum - 0.25f) / 0.50f));
+        if (tintAnimator != null) tintAnimator.cancel();
+        boolean settled = dividerStart == dividerTarget && inkFrom == inkTo
+                && scrimFrom == scrimTo;
+        for (int i = 0; settled && i < starts.size(); i++) {
+            if (starts.get(i).intValue() != targets.get(i).intValue()) settled = false;
+        }
+        if (settled) {
+            applyTintFrame(views, targets, true, divider, dividerTarget, pillTexts, inkTo, scrimTo);
+            return;
+        }
+        final android.animation.ArgbEvaluator argb = new android.animation.ArgbEvaluator();
+        tintAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+        tintAnimator.setDuration(600);
+        tintAnimator.addUpdateListener(animation -> {
+            float f = (Float) animation.getAnimatedValue();
+            java.util.List<Integer> frame = new java.util.ArrayList<>(starts.size());
+            for (int i = 0; i < starts.size(); i++) {
+                frame.add((Integer) argb.evaluate(f, starts.get(i), targets.get(i)));
+            }
+            int ink = (Integer) argb.evaluate(f, inkFrom, inkTo);
+            int div = (Integer) argb.evaluate(f, dividerStart, dividerTarget);
+            applyTintFrame(views, frame, false, divider, div, pillTexts, ink,
+                    scrimFrom + (scrimTo - scrimFrom) * f);
+        });
+        tintAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override public void onAnimationEnd(android.animation.Animator animation) {
+                applyTintFrame(views, targets, true, divider, dividerTarget, pillTexts, inkTo, scrimTo);
+            }
+        });
+        tintAnimator.start();
+    }
+
+    private static void addTintTarget(java.util.List<TextView> views, java.util.List<Integer> starts,
+                                      java.util.List<Integer> targets, TextView view, int target) {
+        if (view == null) return;
+        views.add(view);
+        starts.add(view.getCurrentTextColor());
+        targets.add(target);
+    }
+
+    /** One frame of the tint transition. On the final frame, a pill whose ink is back at its
+     *  original colour gets its exact original colour lists back. */
+    private void applyTintFrame(java.util.List<TextView> views, java.util.List<Integer> colors,
+                                boolean finalFrame, View divider, int dividerColor,
+                                java.util.List<TextView> pillTexts, int inkDefault, float scrim) {
+        for (int i = 0; i < views.size(); i++) views.get(i).setTextColor(colors.get(i));
+        if (divider != null) {
+            divider.setBackgroundColor(dividerColor);
+            dividerShown = dividerColor;
+        }
+        scrimStrength = scrim;
+        if (topScrimView != null) topScrimView.setAlpha(uiAlpha * scrimStrength);
+        android.content.res.ColorStateList ink = new android.content.res.ColorStateList(
+                new int[][]{{android.R.attr.state_focused}, {}},
+                new int[]{0xFF111111, inkDefault});
+        for (TextView pill : pillTexts) {
+            if (finalFrame && origPillTextColors != null && inkDefault == origDefaultOf(pill)) {
+                pill.setTextColor(origPillTextColors.get(pill));
+                pill.setCompoundDrawableTintList(origPillTints.get(pill));
+            } else {
+                pill.setTextColor(ink);
+                pill.setCompoundDrawableTintList(ink);
+            }
+        }
+    }
+
+    private int origDefaultOf(TextView pill) {
+        android.content.res.ColorStateList orig = origPillTextColors == null ? null : origPillTextColors.get(pill);
+        return orig == null ? Integer.MIN_VALUE : orig.getDefaultColor();
     }
 
     /** The top-right pills get a light glass on a bright wallpaper (owner: match the dock band,
@@ -3075,18 +3180,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 origPillTints.put(pill, pill.getCompoundDrawableTintList());
             }
         }
-        android.content.res.ColorStateList ink = new android.content.res.ColorStateList(
-                new int[][]{{android.R.attr.state_focused}, {}},
-                new int[]{0xFF111111, 0xE6000000});
         for (int i = 0; i < top.getChildCount(); i++) {
             View child = top.getChildAt(i);
             if (child.getId() == R.id.btnVpn) continue;   // the VPN pill paints its own state background
             child.setBackground(dark ? brightPillBackground() : origPillBgs.get(child));
         }
-        for (TextView pill : pillTexts) {
-            pill.setTextColor(dark ? ink : origPillTextColors.get(pill));
-            pill.setCompoundDrawableTintList(dark ? ink : origPillTints.get(pill));
-        }
+        // The glyph ink is applied by applyWallpaperTextColors' transition, not here.
     }
 
     private android.graphics.drawable.Drawable brightPillBackground() {
