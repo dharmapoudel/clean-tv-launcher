@@ -14,8 +14,9 @@ are listed under [What this fork adds](#what-this-fork-adds).
 
 Grab the APK from the
 [Releases page](https://github.com/dharmapoudel/clean-tv-launcher/releases)
-and sideload it (the APK is signed with a debug key, which is fine for
-sideloading):
+and sideload it. It is the optimized release build (R8-minified); it is
+signed with a debug key so it can be installed and updated over ADB without
+a private keystore — the key affects installation only, never performance:
 
 ```sh
 adb connect <tv-ip>
