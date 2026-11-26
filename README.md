@@ -110,6 +110,18 @@ Launcher settings → **Wallpaper** opens the picker:
   frame**, never a photo — so leaving Settings or switching videos never
   flashes a static picture.
 
+### Getting artwork
+
+No artwork ships with this repo — wallpapers are yours to supply. One good
+source is the art app already on many TVs: open a piece full-screen there
+and the set logs the piece's own download URL (the files are served openly
+by the manufacturer's content CDN), so `adb logcat` on a connected computer
+shows it and a plain `curl` saves the full-resolution file. The app's
+catalog is a JSON file on the same CDN; its entries list each piece's video
+and its companion audio tracks. Save photos into `wallpapers/`, videos and
+their same-name audio into `videos/`, and generate the `thumbs/` previews
+as shown above.
+
 ### Idle fade and sleep
 
 - With **Fade out when idle** on (Launcher settings), the whole UI fades out
