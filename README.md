@@ -8,7 +8,9 @@ idle and put it to sleep when you tell it to.
 This is a fork of the launcher in
 [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv), extended and
 tuned on a TCL 75QM6K Pro (Google TV, Android 14). The changes over upstream
-are listed under [What this fork adds](#what-this-fork-adds).
+are listed under [What this fork adds](#what-this-fork-adds). The other half
+of the job — the pre-installed apps and telemetry disabled on that TV, and
+how to re-enable any of them — is written up in [DEBLOAT.md](DEBLOAT.md).
 
 ## Download
 
@@ -51,8 +53,10 @@ helper, and how to undo everything.
   **no focus border**; size alone marks focus.
 - The focused app's **name sits above the dock in ALL CAPS**, set in
   [Manrope](https://fonts.google.com/specimen/Manrope) Medium.
-- **Glass pills** top-right (Inputs, Wi-Fi, Settings) are icon-only circles,
-  with a soft radial scrim behind them so they read on any wallpaper.
+- **Glass pills** top-right: Inputs and Wi-Fi share one pill, Settings is a
+  circle of its own, all icon-only. They wear the same real glass as the
+  dock band, with a soft radial scrim behind them so they read on any
+  wallpaper.
 - **Adaptive text**: the wallpaper is sampled per corner — top-left for the
   clock, top-right for the pills, bottom for the dock band, centre-left for
   the app name. On a bright wallpaper the text and pill glyphs go dark; on a
@@ -61,7 +65,12 @@ helper, and how to undo everything.
 - The dock band is real glass: a GPU shader over a small blurred copy of
   the wallpaper, mixed toward a dark smoked tint, with the background
   bending at the rim and a soft rim light — on Android 13+; older sets
-  keep the flat faint white glass.
+  keep the flat faint white glass. How strong the tint is — **Dock glass
+  tint**: Clear / Faint / Light / Medium — is a Launcher setting, and the
+  top pills wear the same glass at the same strength, so the whole screen
+  matches. Because the glass *is* the wallpaper, there is no light/dark
+  background flip to see; only the text and glyph ink changes, and it
+  cross-fades over 600 ms.
 - Long-press OK on a tile to replace it, move it, or see app info. The row is
   yours; a reinstall can reset on-TV rearrangements, so rearrange last.
 
@@ -215,6 +224,11 @@ Over the upstream launcher:
 - App library moved into the Settings long-press menu; the grid's library
   pill removed for good.
 - App name label: ALL CAPS, smaller, lower, Manrope Medium.
+- The top pills wear the band's real glass too, and the glass tint strength
+  is a Launcher setting (**Dock glass tint**).
+- The highlighted tile is remembered across reboots and process restarts,
+  not just while the launcher stays alive.
+- No greeting line above the clock (`show_greeting` off).
 - Focus border removed entirely (scale marks focus); the dock band is a
   shader-drawn smoked glass over a blurred copy of the wallpaper (idea
   from free-my-tv), with the old flat glass kept as the fallback.

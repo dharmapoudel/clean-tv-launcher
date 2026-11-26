@@ -145,7 +145,9 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         edge.setColor(edgeColorNormal);
     }
 
-    /** Note a bright (or dark) wallpaper under the band; remakes the gradient on a flip. */
+    /** Note a bright (or dark) wallpaper under the band. The glass shader and the flat
+     *  fallback paint are the same in both modes; this only drops the fallback gradient's
+     *  cache, as it did when the two modes painted differently. */
     void setBrightWallpaper(boolean bright) {
         if (brightWallpaper == bright) return;
         brightWallpaper = bright;

@@ -3170,8 +3170,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return orig == null ? Integer.MIN_VALUE : orig.getDefaultColor();
     }
 
-    /** The top-right pills get a light glass on a bright wallpaper (owner: match the dock band,
-     *  with dark glyphs so they stay readable), their own glass back on a dark one. */
+    /** The top pills' original glyph ink, restored exactly when a tint transition lands back
+     *  on the light look. (The pill group and Settings circle wear real glass now and keep
+     *  their background in both modes; the remaining pills still swap backgrounds.) */
     private java.util.Map<View, android.content.res.ColorStateList> origPillTextColors;
     private java.util.Map<View, android.content.res.ColorStateList> origPillTints;
 
